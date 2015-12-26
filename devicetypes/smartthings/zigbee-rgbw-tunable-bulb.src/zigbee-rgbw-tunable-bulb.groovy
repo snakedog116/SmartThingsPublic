@@ -29,7 +29,7 @@ Custom Commands:
 */
 
 metadata {
-	definition (name: "Zigbee RGBW & Tunable Bulb", namespace: "smartthings", author: "SmartThings") {
+	definition (name: "Zigbee RGBW & Tunable Bulb", namespace: "snakedog116", author: "SmartThings") {
 		capability "Switch Level"
 		capability "Actuator"
 		capability "Color Control"
@@ -38,7 +38,10 @@ metadata {
 		capability "Polling"
 		capability "Refresh"
 		capability "Sensor"
-
+		capability "Colour Temperature"
+		
+		attribute "colorName", "string"
+		command "setGenericName"
 		command "setAdjustedColor"
 
 		fingerprint profileId: "C05E", inClusters: "0000,0003,0004,0005,0006,0008,0300,1000", outClusters: "0019"
@@ -66,6 +69,12 @@ metadata {
 		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat") {
 			state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
+	        controlTile("colorTempSliderControl", "device.colorTemperature", "slider", width: 4, height: 2, inactiveLabel: false, range:"(2700..6500)") {
+        		state "colorTemperature", action:"color temperature.setColorTemperature"
+        	}
+		valueTile("colorTemp", "device.colorTemperature", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+			state "colorTemperature", label: '${currentValue} K'
+		}
 		controlTile("rgbSelector", "device.color", "color", height: 3, width: 3, inactiveLabel: false) {
 			state "color", action:"setAdjustedColor"
 		}
@@ -86,9 +95,72 @@ metadata {
 		}
 
 		main(["switch"])
-		details(["switch", "levelSliderControl", "rgbSelector", "refresh"])
-	}
+		details(["switch", "levelSliderControl", "rgbSelector", "refresh", "colorTempSliderControl", "colorTemp"])
+
+    }
 }
+
+// Parse incoming device messages to generate events
+def parse(String description) {
+    log.debug "description is $description"
+
+    def finalResult = zigbee.getKnownDescription(description)
+    if (finalResult) {
+        log.info finalResult
+        if (finalResult.type == "update") {
+            log.info "$device updates: ${finalResult.value}"
+        }
+        else {
+            sendEvent(name: finalResult.type, value: finalResult.value)
+        }
+    }
+    else {
+        log.warn "DID NOT PARSE MESSAGE for description : $description"
+        log.debug zigbee.parseDescriptionAsMap(description)
+    }
+}
+
+def off() {
+    zigbee.off()
+}
+
+def on() {
+    zigbee.on()
+}
+
+def setLevel(value) {
+    zigbee.setLevel(value)
+}
+
+def refresh() {
+    zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.colorTemperatureRefresh() + zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.colorTemperatureConfig()
+}
+
+def configure() {
+    log.debug "Configuring Reporting and Bindings."
+    zigbee.onOffConfig() + zigbee.levelConfig() + zigbee.colorTemperatureConfig() + zigbee.onOffRefresh() + zigbee.levelRefresh() + zigbee.colorTemperatureRefresh()
+}
+
+def setColorTemperature(value) {
+    setGenericName(value)
+    zigbee.setColorTemperature(value)
+}
+
+//Naming based on the wiki article here: http://en.wikipedia.org/wiki/Color_temperature
+def setGenericName(value){
+    if (value != null) {
+        def genericName = "White"
+        if (value < 3300) {
+            genericName = "Soft White"
+        } else if (value < 4150) {
+            genericName = "Moonlight"
+        } else if (value <= 5000) {
+            genericName = "Cool White"
+        } else if (value >= 5000) {
+            genericName = "Daylight"
+        }
+        sendEvent(name: "colorName", value: genericName)
+    }
 
 // Parse incoming device messages to generate events
 def parse(String description) {
