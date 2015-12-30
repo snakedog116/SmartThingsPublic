@@ -11,7 +11,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  */
-/* Philips Hue (via Zigbee)
+/* EcoSmart RGBW (via Zigbee)
 
 Capabilities:
   Actuator
@@ -35,7 +35,7 @@ SmartThingsPublic/devicetypes/smartthings/osram-lightify-led-tunable-white-60w.s
 */
 
 metadata {
-	definition (name: "Zigbee RGBW Tunable Bulb", namespace: "snakedog116", author: "Snakedog116") {
+	definition (name: "Zigbee RGBW Temp Bulb", namespace: "snakedog116", author: "Snakedog116") {
 		capability "Switch Level"
 		capability "Actuator"
 		capability "Color Control"
@@ -44,11 +44,10 @@ metadata {
 		capability "Polling"
 		capability "Refresh"
 		capability "Sensor"
-		capability "Color Temperature"
+        capability "Color Temperature"
 
-		attribute "colorName", "String"
 		command "setAdjustedColor"
-		command "setGenericName"
+
 		fingerprint profileId: "C05E", inClusters: "0000,0003,0004,0005,0006,0008,0300,1000", outClusters: "0019"
 	}
 
@@ -64,23 +63,40 @@ metadata {
 	}
 
 	// UI tile definitions
-	tiles {
-		standardTile("switch", "device.switch", width: 1, height: 1, canChangeIcon: true) {
+	tiles(scale: 2) {
+
+        multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
+            tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
+                attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.light.on", backgroundColor:"#79b821", nextState:"turningOff"
+                attributeState "off", label:'${name}', action:"switch.on", icon:"st.switches.light.off", backgroundColor:"#ffffff", nextState:"turningOn"
+                attributeState "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.light.on", backgroundColor:"#79b821", nextState:"turningOff"
+                attributeState "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.light.off", backgroundColor:"#ffffff", nextState:"turningOn"
+            }
+            tileAttribute ("device.level", key: "SLIDER_CONTROL") {
+                attributeState "level", action:"switch level.setLevel"
+            }
+            tileAttribute ("device.color", key: "COLOR_CONTROL") {
+                attributeState "color", action:"setAdjustedColor"
+            }
+            
+            
+        }    
+		standardTile("switch2", "device.switch", width: 1, height: 1, canChangeIcon: true) {
 			state "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
 			state "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
 			state "turningOn", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"turningOff"
 			state "turningOff", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"turningOn"
 		}
-		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat") {
+		standardTile("refresh", "device.switch", height: 2, width: 2, inactiveLabel: false, decoration: "flat") {
 			state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
-		controlTile("rgbSelector", "device.color", "color", height: 3, width: 3, inactiveLabel: false) {
+		controlTile("rgbSelector", "device.color", "color", height: 6, width: 6, inactiveLabel: false) {
 			state "color", action:"setAdjustedColor"
 		}
-		controlTile("levelSliderControl", "device.level", "slider", height: 1, width: 2, inactiveLabel: false) {
+		controlTile("levelSliderControl", "device.level", "slider", height: 2, width: 4, inactiveLabel: false, range:"(0..100)") {
 			state "level", action:"switch level.setLevel"
 		}
-		valueTile("level", "device.level", inactiveLabel: false, decoration: "flat") {
+		valueTile("level", "device.level", inactiveLabel: false, height: 2, width: 2, decoration: "flat") {
 			state "level", label: 'Level ${currentValue}%'
 		}
 		controlTile("saturationSliderControl", "device.saturation", "slider", height: 1, width: 2, inactiveLabel: false) {
@@ -89,12 +105,18 @@ metadata {
 		valueTile("saturation", "device.saturation", inactiveLabel: false, decoration: "flat") {
 			state "saturation", label: 'Sat ${currentValue}    '
 		}
-		controlTile("hueSliderControl", "device.hue", "slider", height: 1, width: 2, inactiveLabel: false) {
+		controlTile("hueSliderControl", "device.hue", "slider", height: 2, width: 4, inactiveLabel: false) {
 			state "hue", action:"color control.setHue"
 		}
-
+        controlTile("colorTempSliderControl", "device.colorTemperature", "slider", height: 2, width: 4, inactiveLabel: false, range:"(2700..6500)") {
+            state "colorTemperature", action:"color temperature.setColorTemperature"
+        }
+        valueTile("colorTemp", "device.colorTemperature", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+            state "colorTemperature", label: '${currentValue} K'
+        }
+        
 		main(["switch"])
-		details(["switch", "levelSliderControl", "rgbSelector", "refresh"])
+		details(["switch", "levelSliderControl", "level", "colorTempSliderControl", "colorTemp", "rgbSelector", "refresh"])
 	}
 }
 
@@ -213,10 +235,15 @@ def setLevel(value) {
 	sendEvent(name: "level", value: value)
     def level = hexString(Math.round(value * 255/100))
 	cmds << "st cmd 0x${device.deviceNetworkId} ${endpointId} 8 4 {${level} 0000}"
-
-	//log.debug cmds
 	cmds
 }
+
+
+def setColorTemperature(value) {
+	sendEvent(name: "colorTemperature", value: value)
+    zigbee.setColorTemperature(value)
+}
+
 
 private getEndpointId() {
 	new BigInteger(device.endpointId, 16).toString()
