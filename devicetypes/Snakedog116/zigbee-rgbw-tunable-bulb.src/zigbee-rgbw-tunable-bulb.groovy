@@ -15,21 +15,27 @@
 
 Capabilities:
   Actuator
-  Color Control
+  Colour Control
   Configuration
   Polling
   Refresh
   Sensor
   Switch
   Switch Level
+  Colour Temperature
   
 Custom Commands:
   setAdjustedColor
-    
+  setGenericName
+  
+Created using the base code from SmartThings Community:
+SmartThingsPublic/devicetypes/smartthings/zigbee-hue-bulb.src/zigbee-hue-bulb.groovy
+SmartThingsPublic/devicetypes/smartthings/osram-lightify-led-tunable-white-60w.src/osram-lightify-led-tunable-white-60w.groovy
+
 */
 
 metadata {
-	definition (name: "Zigbee RGBW and Temp Bulb", namespace: "snakedog116", author: "SmartThings Snakedog116") {
+	definition (name: "Zigbee RGBW and Tunable Bulb", namespace: "Snakedog116", author: "Snakedog116") {
 		capability "Switch Level"
 		capability "Actuator"
 		capability "Color Control"
@@ -40,7 +46,7 @@ metadata {
 		capability "Sensor"
 		capability "Color Temperature"
 
-		attribute "colorName", "Sting"
+		attribute "colorName", "Srting"
 		command "setAdjustedColor"
 		command "setGenericName"
 		fingerprint profileId: "C05E", inClusters: "0000,0003,0004,0005,0006,0008,0300,1000", outClusters: "0019"
