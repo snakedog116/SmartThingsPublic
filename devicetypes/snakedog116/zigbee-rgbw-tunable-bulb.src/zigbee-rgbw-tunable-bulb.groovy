@@ -35,7 +35,7 @@ SmartThingsPublic/devicetypes/smartthings/osram-lightify-led-tunable-white-60w.s
 */
 
 metadata {
-	definition (name: "Zigbee RGBW and Tunable Bulb", namespace: "Snakedog116", author: "Snakedog116") {
+	definition (name: "Zigbee RGBW Tunable Bulb", namespace: "snakedog116", author: "Snakedog116") {
 		capability "Switch Level"
 		capability "Actuator"
 		capability "Color Control"
