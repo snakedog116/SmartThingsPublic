@@ -1,2 +1,1 @@
-Root for StrykerSKS SmartThings development.
-
+This is SnakeDog116's personal repo
